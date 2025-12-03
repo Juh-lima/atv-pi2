@@ -9,7 +9,7 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="dashboard-wrapper">
 
-      {/* NAVBAR */}
+   
       <nav className="dashboard-navbar">
         <h1 className="dashboard-navbar-title">AnimalHotels</h1>
 
@@ -21,7 +21,7 @@ export const Dashboard: React.FC = () => {
         </div>
       </nav>
 
-      {/* MAIN CONTENT */}
+    
       <main className="dashboard-main">
 
         <header className="dashboard-header">
@@ -33,7 +33,7 @@ export const Dashboard: React.FC = () => {
           </p>
         </header>
 
-        {/* CARDS PRINCIPAIS */}
+ 
         <div className="dashboard-cards">
 
           <Link to="/tutors" className="dashboard-card">
@@ -60,7 +60,6 @@ export const Dashboard: React.FC = () => {
 
         </div>
 
-        {/* STEPS */}
         <section className="dashboard-steps">
           <h2 className="dashboard-steps-title">Como usar o sistema:</h2>
 
