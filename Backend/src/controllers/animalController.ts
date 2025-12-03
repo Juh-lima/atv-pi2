@@ -7,28 +7,52 @@ import { AuthRequest } from '../middleware/auth';
 let tutors: Tutor[] = [];
 let animals: Animal[] = [];
 
+/**
+ * Retorna todos os animais do usuário logado
+ */
 export const getAnimals = (req: AuthRequest, res: Response) => {
   try {
-    const userTutors = tutors.filter(t => t.userId === req.user!.id);
-    const userAnimals = animals.filter(animal => 
-      userTutors.some(tutor => tutor.id === animal.tutorId)
+    const userId = req.user!.id;
+
+    // tutores do usuário logado
+    const userTutors = tutors.filter(t => t.userId === userId);
+
+    // animais de qualquer tutor do usuário
+    const userAnimals = animals.filter(a =>
+      userTutors.some(t => t.id === a.tutorId)
     );
-    res.json(userAnimals);
+
+    return res.json(userAnimals);
+
   } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar animais' });
+    return res.status(500).json({ error: 'Erro ao buscar animais' });
   }
 };
 
+/**
+ * Cria um novo animal
+ */
 export const createAnimal = (req: AuthRequest, res: Response) => {
   try {
-    const { name, species, breed, age, tutorId, photo } = req.body;
+    const { name, species, breed, age, tutorId } = req.body;
     const userId = req.user!.id;
 
-    if (!name || !species || !breed || !age || !tutorId) {
-      return res.status(400).json({ error: 'Todos os campos obrigatórios devem ser preenchidos' });
+    // 🔥 VALIDAÇÃO SEGURA — sem forçar tipos errados
+    if (!name || !species || !breed || !tutorId) {
+      return res
+        .status(400)
+        .json({ error: 'Todos os campos obrigatórios devem ser preenchidos' });
     }
 
-    const tutor = tutors.find(t => t.id === tutorId && t.userId === userId);
+    const numericAge = Number(age);
+
+    if (isNaN(numericAge)) {
+      return res.status(400).json({ error: 'Idade inválida' });
+    }
+
+    // 🔥 tutorId deve ser string (UUID)
+    const tutor = tutors.find(t => t.id === String(tutorId) && t.userId === userId);
+
     if (!tutor) {
       return res.status(404).json({ error: 'Tutor não encontrado' });
     }
@@ -38,91 +62,117 @@ export const createAnimal = (req: AuthRequest, res: Response) => {
       name,
       species,
       breed,
-      age: parseInt(age),
-      tutorId,
-      photo,
+      age: numericAge,
+      tutorId: String(tutorId),      // 🔥 garante string
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
 
     animals.push(newAnimal);
-    res.status(201).json(newAnimal);
+
+    return res.status(201).json(newAnimal);
+
   } catch (error) {
-    res.status(500).json({ error: 'Erro ao criar animal' });
+    return res.status(500).json({ error: 'Erro ao criar animal' });
   }
 };
 
+/**
+ * Atualiza animal
+ */
 export const updateAnimal = (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, species, breed, age, photo } = req.body;
+    const { name, species, breed, age } = req.body;
+
     const userId = req.user!.id;
 
-    const animalIndex = animals.findIndex(a => a.id === id);
-    if (animalIndex === -1) {
+    const index = animals.findIndex(a => a.id === id);
+    if (index === -1) {
       return res.status(404).json({ error: 'Animal não encontrado' });
     }
 
-    const animalTutor = tutors.find(t => 
-      t.id === animals[animalIndex].tutorId && t.userId === userId
+    // Confirma que o animal pertence a tutor do usuário
+    const tutor = tutors.find(
+      t => t.id === animals[index].tutorId && t.userId === userId
     );
-    if (!animalTutor) {
+
+    if (!tutor) {
       return res.status(404).json({ error: 'Animal não encontrado' });
     }
 
-    animals[animalIndex] = {
-      ...animals[animalIndex],
+    const numericAge = Number(age);
+    if (!name || !species || !breed || isNaN(numericAge)) {
+      return res
+        .status(400)
+        .json({ error: 'Todos os campos obrigatórios devem ser preenchidos' });
+    }
+
+    animals[index] = {
+      ...animals[index],
       name,
       species,
       breed,
-      age: parseInt(age),
-      photo,
-      updatedAt: new Date().toISOString()
+      age: numericAge,
+      updatedAt: new Date().toISOString(),
     };
 
-    res.json(animals[animalIndex]);
+    return res.json(animals[index]);
+
   } catch (error) {
-    res.status(500).json({ error: 'Erro ao atualizar animal' });
+    return res.status(500).json({ error: 'Erro ao atualizar animal' });
   }
 };
 
+/**
+ * Deleta animal
+ */
 export const deleteAnimal = (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
 
-    const animalIndex = animals.findIndex(a => a.id === id);
-    if (animalIndex === -1) {
+    const index = animals.findIndex(a => a.id === id);
+    if (index === -1) {
       return res.status(404).json({ error: 'Animal não encontrado' });
     }
 
-    const animalTutor = tutors.find(t => 
-      t.id === animals[animalIndex].tutorId && t.userId === userId
+    const tutor = tutors.find(
+      t => t.id === animals[index].tutorId && t.userId === userId
     );
-    if (!animalTutor) {
+
+    if (!tutor) {
       return res.status(404).json({ error: 'Animal não encontrado' });
     }
 
     animals = animals.filter(a => a.id !== id);
-    res.status(204).send();
+
+    return res.status(204).send();
+
   } catch (error) {
-    res.status(500).json({ error: 'Erro ao deletar animal' });
+    return res.status(500).json({ error: 'Erro ao deletar animal' });
   }
 };
 
+/**
+ * Retorna animais por tutor
+ */
 export const getAnimalsByTutor = (req: AuthRequest, res: Response) => {
   try {
     const { tutorId } = req.params;
     const userId = req.user!.id;
 
     const tutor = tutors.find(t => t.id === tutorId && t.userId === userId);
+
     if (!tutor) {
       return res.status(404).json({ error: 'Tutor não encontrado' });
     }
 
-    const tutorAnimals = animals.filter(animal => animal.tutorId === tutorId);
-    res.json(tutorAnimals);
+    const tutorAnimals = animals.filter(a => a.tutorId === tutorId);
+
+    return res.json(tutorAnimals);
+
   } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar animais do tutor' });
+    return res.status(500).json({ error: 'Erro ao buscar animais do tutor' });
   }
 };

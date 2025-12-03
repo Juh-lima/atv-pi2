@@ -22,7 +22,6 @@ export interface Animal {
   breed: string;
   age: number;
   tutorId: string;
-  photo?: string;
   createdAt: string;
   updatedAt: string;
 }

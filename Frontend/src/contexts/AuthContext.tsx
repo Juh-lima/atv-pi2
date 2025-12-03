@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useReducer, type ReactNode } from 'react';
+
+import React, { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
 import type { User, AuthState } from '../types/index.ts';
 import { authService } from '../services/api.ts';
 
@@ -56,8 +57,8 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 
 const initialState: AuthState = {
   user: null,
-  token: localStorage.getItem('token'),
-  isAuthenticated: !!localStorage.getItem('token'),
+  token: null,
+  isAuthenticated: false,
   loading: false,
   error: null,
 };
@@ -65,24 +66,45 @@ const initialState: AuthState = {
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const user = localStorage.getItem("user");
+
+    if (token && user) {
+      dispatch({
+        type: "LOGIN_SUCCESS",
+        payload: {
+          token,
+          user: JSON.parse(user),
+        },
+      });
+    }
+  }, []);
+
   const login = async (email: string, password: string) => {
-    dispatch({ type: 'LOGIN_START' });
-    
     try {
       const response = await authService.login(email, password);
-      const { user, token } = response.data;
-      
-      localStorage.setItem('token', token);
-      dispatch({ type: 'LOGIN_SUCCESS', payload: { user, token } });
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.error || 'Erro ao fazer login';
-      dispatch({ type: 'LOGIN_FAILURE', payload: errorMessage });
-      throw error;
+      const { token, user } = response.data;
+
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+
+      dispatch({
+        type: "LOGIN_SUCCESS",
+        payload: { token, user },
+      });
+
+      return true;
+    } catch (err: any) {
+      console.error("Erro no login:", err?.response?.data || err.message);
+      dispatch({ type: "LOGIN_FAILURE", payload: "Login falhou" });
+      return false;
     }
   };
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     dispatch({ type: 'LOGOUT' });
   };
 

@@ -2,27 +2,28 @@ import React, { useState, useEffect } from 'react';
 import type { Animal, Tutor } from '../types/index.ts';
 
 interface AnimalFormProps {
-  onSubmit: (data: Omit<Animal, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  onSubmit: (data: any) => Promise<void>;
   initialData?: Animal;
   tutors: Tutor[];
   isLoading?: boolean;
   onCancel?: () => void;
 }
 
-export const AnimalForm: React.FC<AnimalFormProps> = ({ 
-  onSubmit, 
-  initialData, 
+export const AnimalForm: React.FC<AnimalFormProps> = ({
+  onSubmit,
+  initialData,
   tutors,
   isLoading = false,
-  onCancel 
+  onCancel
 }) => {
+
+  // 🔥 tutorId sempre STRING no estado (React exige isso no select)
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
-    species: initialData?.species || 'dog' as 'cat' | 'dog',
+    species: initialData?.species || 'dog',
     breed: initialData?.breed || '',
     age: initialData?.age || 1,
-    tutorId: initialData?.tutorId || '',
-    photo: initialData?.photo || '',
+    tutorId: initialData?.tutorId ? String(initialData.tutorId) : '',
   });
 
   useEffect(() => {
@@ -32,55 +33,61 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({
         species: initialData.species,
         breed: initialData.breed,
         age: initialData.age,
-        tutorId: initialData.tutorId,
-        photo: initialData.photo || '',
+        tutorId: initialData.tutorId ? String(initialData.tutorId) : '',
       });
     }
   }, [initialData]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await onSubmit(formData);
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
+
+    // 🔥 não converte tutorId aqui!
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'age' ? parseInt(value) || 1 : value
+      [name]: name === "age" ? Number(value) : value
     }));
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  // 🔥 Envia tutorId como STRING
+  const payload = {
+    ...formData,
+    tutorId: formData.tutorId, 
+  };
+
+  await onSubmit(payload);
+};
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+
+      {/* Nome e espécie */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-            Nome do Animal *
-          </label>
+          <label className="block text-sm font-medium">Nome *</label>
           <input
             type="text"
             name="name"
-            id="name"
-            required
             value={formData.name}
+            required
             onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2"
-            placeholder="Ex: Rex, Luna, etc."
+            className="border p-2 w-full rounded-md"
           />
         </div>
 
         <div>
-          <label htmlFor="species" className="block text-sm font-medium text-gray-700">
-            Espécie *
-          </label>
+          <label className="block text-sm font-medium">Espécie *</label>
           <select
             name="species"
-            id="species"
-            required
             value={formData.species}
+            required
             onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2"
+            className="border p-2 w-full rounded-md"
           >
             <option value="dog">Cachorro</option>
             <option value="cat">Gato</option>
@@ -88,112 +95,72 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({
         </div>
       </div>
 
+      {/* Raça e idade */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
         <div>
-          <label htmlFor="breed" className="block text-sm font-medium text-gray-700">
-            Raça *
-          </label>
+          <label className="block text-sm font-medium">Raça *</label>
           <input
             type="text"
             name="breed"
-            id="breed"
-            required
             value={formData.breed}
+            required
             onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2"
-            placeholder="Ex: Labrador, Siames, etc."
+            className="border p-2 w-full rounded-md"
           />
         </div>
 
         <div>
-          <label htmlFor="age" className="block text-sm font-medium text-gray-700">
-            Idade (anos) *
-          </label>
+          <label className="block text-sm font-medium">Idade *</label>
           <input
             type="number"
             name="age"
-            id="age"
-            min="0"
-            max="30"
-            required
             value={formData.age}
+            min={0}
+            max={30}
+            required
             onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2"
+            className="border p-2 w-full rounded-md"
           />
         </div>
       </div>
 
+      {/* Tutor */}
       <div>
-        <label htmlFor="tutorId" className="block text-sm font-medium text-gray-700">
-          Tutor *
-        </label>
+        <label className="block text-sm font-medium">Tutor *</label>
+
         <select
           name="tutorId"
-          id="tutorId"
-          required
           value={formData.tutorId}
           onChange={handleChange}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2"
+          required
+          className="border p-2 w-full rounded-md"
         >
           <option value="">Selecione um tutor</option>
-          {tutors.map(tutor => (
-            <option key={tutor.id} value={tutor.id}>
-              {tutor.name} - {tutor.email}
+
+          {tutors.map(t => (
+            <option key={t.id} value={String(t.id)}>
+              {t.name} - {t.email}
             </option>
           ))}
         </select>
-        {tutors.length === 0 && (
-          <p className="text-sm text-red-600 mt-1">
-            Nenhum tutor cadastrado. Cadastre um tutor primeiro.
-          </p>
-        )}
       </div>
 
-      <div>
-        <label htmlFor="photo" className="block text-sm font-medium text-gray-700">
-          Foto (URL opcional)
-        </label>
-        <input
-          type="url"
-          name="photo"
-          id="photo"
-          value={formData.photo}
-          onChange={handleChange}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2"
-          placeholder="https://exemplo.com/foto.jpg"
-        />
-      </div>
-
-      {formData.photo && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Preview da Foto
-          </label>
-          <img 
-            src={formData.photo} 
-            alt="Preview" 
-            className="h-32 w-32 object-cover rounded-md border"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-            }}
-          />
-        </div>
-      )}
-
+      {/* Botões */}
       <div className="flex gap-3 pt-4">
         <button
           type="submit"
-          disabled={isLoading || tutors.length === 0}
-          className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+          disabled={isLoading}
+          className="bg-blue-600 text-white py-2 px-4 rounded-md"
         >
           {isLoading ? 'Salvando...' : initialData ? 'Atualizar' : 'Cadastrar'}
         </button>
-        
+
         {onCancel && (
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            className="bg-gray-300 text-gray-700 py-2 px-4 rounded-md"
           >
             Cancelar
           </button>

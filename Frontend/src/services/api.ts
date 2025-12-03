@@ -1,59 +1,99 @@
-import axios from 'axios';
-import type { Tutor, Animal, User } from '../types/index.ts';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+// import axios from 'axios';
+
+// const api = axios.create({
+//   baseURL: 'http://localhost:3001/api',
+// });
+
+// api.interceptors.request.use((config) => {
+//   const token = localStorage.getItem('token');
+//   if (token) {
+//     config.headers.Authorization = `Bearer ${token}`;
+//   }
+//   return config;
+// });
+
+// api.interceptors.response.use(
+//   (res) => res,
+//   (error) => {
+//     console.error('API error:', error?.response?.status, error?.response?.data);
+//     return Promise.reject(error);
+//   }
+// );
+
+// export const authService = {
+//   login: (email: string, password: string) =>
+//     api.post('/auth/login', { email, password }),
+// };
+
+// export default api;
+
+import axios from "axios";
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: "http://localhost:3001/api",
 });
 
-// Interceptor para adicionar token JWT
+
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+  const token = localStorage.getItem("token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config; 
 });
 
-// Interceptor para tratar erros
+
 api.interceptors.response.use(
-  (response) => response,
+  (res) => res,
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-    }
+    console.error(
+      "API Error:",
+      error?.response?.status,
+      error?.response?.data
+    );
     return Promise.reject(error);
   }
 );
 
 export const authService = {
-  login: (email: string, password: string) => 
-    api.post<{ token: string; user: User }>('/auth/login', { email, password }),
+  login: (email: string, password: string) =>
+    api.post("/auth/login", { email, password }),
 };
+
 
 export const tutorService = {
-  getAll: () => api.get<Tutor[]>('/tutors'),
-  create: (tutor: Omit<Tutor, 'id' | 'createdAt' | 'updatedAt'>) => 
-    api.post<Tutor>('/tutors', tutor),
-  update: (id: string, tutor: Partial<Tutor>) => 
-    api.put<Tutor>(`/tutors/${id}`, tutor),
-  delete: (id: string) => api.delete(`/tutors/${id}`),
+  list: () => api.get("/tutors"),
+  get: (id: string) => api.get(`/tutors/${id}`),
+  create: (data: any) => api.post("/tutors", data),
+  update: (id: string, data: any) => api.put(`/tutors/${id}`, data),
+  remove: (id: string) => api.delete(`/tutors/${id}`),
 };
 
+// --------------------
+// ANIMAL SERVICE
+// --------------------
+// export const animalService = {
+//   list: () => api.get("/animals"),
+//   getByTutor: (tutorId: string) =>
+//     api.get(`/tutors/${tutorId}/animals`),
+//   create: (data: any) => api.post("/animals", data),
+//   update: (id: string, data: any) => api.put(`/animals/${id}`, data),
+//   remove: (id: string) => api.delete(`/animals/${id}`),
+// };
+
 export const animalService = {
-  getAll: () => api.get<Animal[]>('/animals'),
-  create: (animal: Omit<Animal, 'id' | 'createdAt' | 'updatedAt'>) => 
-    api.post<Animal>('/animals', animal),
-  update: (id: string, animal: Partial<Animal>) => 
-    api.put<Animal>(`/animals/${id}`, animal),
-  delete: (id: string) => api.delete(`/animals/${id}`),
-  getByTutorId: (tutorId: string) => 
-    api.get<Animal[]>(`/tutors/${tutorId}/animals`),
+  list: () => api.get('/animals'),
+  getByTutor: (tutorId: number) => api.get(`/tutors/${tutorId}/animals`),
+  create: (data: any) =>
+    api.post('/animals', {
+      ...data,
+      tutorId: Number(data.tutorId)
+    }),
+  update: (id: number, data: any) =>
+    api.put(`/animals/${id}`, {
+      ...data,
+      tutorId: Number(data.tutorId)
+    }),
+  remove: (id: number) => api.delete(`/animals/${id}`)
 };
 
 export default api;

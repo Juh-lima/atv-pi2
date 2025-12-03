@@ -5,7 +5,7 @@ import { AppProvider } from './contexts/AppContext';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard.tsx';
 import { Tutors } from './pages/Tutors.tsx';
-import { Animals } from './pages/Animals.tsx';
+import  Animals  from './pages/Animals.tsx';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
